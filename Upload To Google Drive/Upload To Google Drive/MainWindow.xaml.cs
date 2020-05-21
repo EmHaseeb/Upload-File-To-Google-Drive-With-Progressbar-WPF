@@ -1,9 +1,10 @@
-﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -17,6 +18,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace Upload_To_Google_Drive
 {
@@ -25,6 +27,7 @@ namespace Upload_To_Google_Drive
     /// </summary>
     public partial class MainWindow : Window
     {
+        String filepath;
         public MainWindow()
         {
             InitializeComponent();
@@ -33,16 +36,17 @@ namespace Upload_To_Google_Drive
         {
             Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
             // Set filter for file extension and default file extension 
-            dlg.Filter = "All Files|*.*";
+            dlg.DefaultExt = "All Files|*.*";
             //dlg.DefaultExt = ".db";
             //dlg.Filter = "Backup Files (*.bak)|*.bak|Database Files (*.db)|*.db|SQLite Files (*.sqlite)|*.sqlite|SQL Files (*.sql)|*.sql";
+            //dlg.Filter = "Database Files (*.bak)|*.bak|(*.db)|*.db|JPG Files (*.jpg)|*.jpg|GIF Files (*.gif)|*.gif";
             Nullable<bool> result = dlg.ShowDialog();
 
             // Get the selected file name and display in a TextBox 
             if (result == true)
             {
-                string filename = dlg.FileName;
-                tbFilepath.Text = filename;
+                filepath = dlg.FileName;
+                tbFilepath.Text = filepath;
             }
         }
         private void button_Click(object sender, RoutedEventArgs e)
@@ -79,7 +83,7 @@ namespace Upload_To_Google_Drive
             var respocne = uploadFile(service, tbFilepath.Text, "");
             // Third parameter is empty it means it would upload to root directory, if you want to upload under a folder, pass folder's id here Uncomment Line 94.
 
-            MessageBox.Show("Process completed--- Response--" + respocne);
+            //MessageBox.Show("Process completed--- Response--" + respocne);
         }
 
         public Google.Apis.Drive.v3.Data.File uploadFile(DriveService _service, string _uploadFile, string _parent, string _descrp = "Uploaded with .NET!")
@@ -126,7 +130,7 @@ namespace Upload_To_Google_Drive
 
         private void Request_ProgressChanged(Google.Apis.Upload.IUploadProgress obj)
         {
-                    byte[] byteArray1 = System.IO.File.ReadAllBytes(filepath);
+            byte[] byteArray1 = System.IO.File.ReadAllBytes(filepath);
             double totalFileSize = BitConverter.ToInt32(byteArray1, 0);
             DispatcherOperation op = Dispatcher.BeginInvoke((Action)(() =>
             {
@@ -143,14 +147,14 @@ namespace Upload_To_Google_Drive
                 }
             }));
 
-            Debug.WriteLine((obj.BytesSent * 100) / totalFileSize);
+            Debug.Write(obj.Status + "\r\r " + obj.BytesSent);
         }
 
         private void Request_ResponseReceived(Google.Apis.Drive.v3.Data.File obj)
         {
             if (obj != null)
             {
-                MessageBox.Show("File was uploaded sucessfully--" + obj.Id);
+                //MessageBox.Show("File was uploaded sucessfully--" + obj.Id);
             }
         }
     }
