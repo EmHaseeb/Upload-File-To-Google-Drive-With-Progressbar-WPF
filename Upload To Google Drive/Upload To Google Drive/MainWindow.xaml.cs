@@ -101,7 +101,12 @@ namespace Upload_To_Google_Drive
                     // You can bind event handler with progress changed event and response recieved(completed event)
                     request.ProgressChanged += Request_ProgressChanged;
                     request.ResponseReceived += Request_ResponseReceived;
-                    request.Upload();
+                    var task = request.UploadAsync();
+                    task.ContinueWith(t =>
+                    {
+                        // Remeber to clean the stream.
+                        stream.Dispose();
+                    });
                     return request.ResponseBody;
                 }
                 catch (Exception e)
@@ -121,7 +126,24 @@ namespace Upload_To_Google_Drive
 
         private void Request_ProgressChanged(Google.Apis.Upload.IUploadProgress obj)
         {
-            MessageBox.Show(obj.Status + "\r\r " + obj.BytesSent);
+                    byte[] byteArray1 = System.IO.File.ReadAllBytes(filepath);
+            double totalFileSize = BitConverter.ToInt32(byteArray1, 0);
+            DispatcherOperation op = Dispatcher.BeginInvoke((Action)(() =>
+            {
+                pbar.Value += (obj.BytesSent * 100) / totalFileSize;
+                if (obj.Status.ToString() == "Starting")
+                {
+                    pbar.Value = 5;
+                    MessageBox.Show(Application.Current.MainWindow, "Upload Started");
+                }
+                else if (obj.Status.ToString() == "Completed")
+                {
+                    pbar.Value = 100;
+                    MessageBox.Show(Application.Current.MainWindow, "Upload Complete");
+                }
+            }));
+
+            Debug.WriteLine((obj.BytesSent * 100) / totalFileSize);
         }
 
         private void Request_ResponseReceived(Google.Apis.Drive.v3.Data.File obj)
